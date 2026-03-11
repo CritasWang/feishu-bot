@@ -50,6 +50,11 @@ func main() {
 			fmt.Fprintf(os.Stderr, "错误: %v\n", err)
 			os.Exit(1)
 		}
+	case "reload":
+		if err := daemonReload(); err != nil {
+			fmt.Fprintf(os.Stderr, "错误: %v\n", err)
+			os.Exit(1)
+		}
 	case "status":
 		daemonStatus()
 	case "console":
@@ -68,6 +73,7 @@ func printUsage() {
 	fmt.Println("  start     后台启动（日志写入 logs/ 目录）")
 	fmt.Println("  stop      停止后台进程")
 	fmt.Println("  restart   重启后台进程")
+	fmt.Println("  reload    热重载配置（无需重启）")
 	fmt.Println("  status    查看运行状态")
 	fmt.Println("  console   前台运行（日志输出到终端，调试用）")
 	fmt.Println("  help      显示帮助信息")

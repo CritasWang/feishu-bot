@@ -143,6 +143,29 @@ func daemonStatus() {
 	}
 }
 
+func daemonReload() error {
+	pid, err := readPID()
+	if err != nil {
+		return fmt.Errorf("未找到 PID 文件，可能未运行")
+	}
+	if !isRunning(pid) {
+		os.Remove(pidFilePath())
+		return fmt.Errorf("进程 %d 已不存在", pid)
+	}
+
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return fmt.Errorf("查找进程失败: %w", err)
+	}
+
+	if err := process.Signal(syscall.SIGHUP); err != nil {
+		return fmt.Errorf("发送重载信号失败: %w", err)
+	}
+
+	fmt.Printf("配置重载信号已发送 (PID: %d)\n", pid)
+	return nil
+}
+
 func daemonRestart(configPath string) error {
 	if pid, err := readPID(); err == nil && isRunning(pid) {
 		if err := daemonStop(); err != nil {
