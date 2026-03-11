@@ -139,7 +139,7 @@ func runBot(configPath, logDir string) {
 	helpCmd.SetCommands(router.AllCommands())
 
 	// 启动 Hook HTTP 服务
-	hookServer := NewHookServer(cfg.HookPort, replier)
+	hookServer := NewHookServer(cfg.HookPort, replier, cfg.NotifyChatID)
 	hookServer.Start()
 
 	// 创建飞书事件处理器

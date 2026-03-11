@@ -30,6 +30,9 @@ type Config struct {
 	// Hook 服务端口（供 Claude Code hooks 回调）
 	HookPort int `yaml:"hook_port"`
 
+	// 默认通知目标（hooks 不指定 chat_id 时使用）
+	NotifyChatID string `yaml:"notify_chat_id"`
+
 	// 日志级别
 	LogLevel string `yaml:"log_level"` // debug, info, warn, error
 }

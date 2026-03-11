@@ -10,9 +10,10 @@ import (
 
 // HookServer 提供 HTTP 端点供 Claude Code hooks 回调
 type HookServer struct {
-	port     int
-	replier  *Replier
-	mu       sync.RWMutex
+	port           int
+	replier        *Replier
+	defaultChatID  string
+	mu             sync.RWMutex
 	// 存储最近的 hook 通知（可供查询）
 	lastNotifications []HookNotification
 }
@@ -22,13 +23,14 @@ type HookNotification struct {
 	Event   string `json:"event"`
 	Tool    string `json:"tool,omitempty"`
 	Message string `json:"message,omitempty"`
-	ChatID  string `json:"chat_id,omitempty"` // 指定推送到哪个飞书聊天
+	ChatID  string `json:"chat_id,omitempty"` // 指定推送到哪个飞书聊天，为空则用默认
 }
 
-func NewHookServer(port int, replier *Replier) *HookServer {
+func NewHookServer(port int, replier *Replier, defaultChatID string) *HookServer {
 	return &HookServer{
-		port:    port,
-		replier: replier,
+		port:          port,
+		replier:       replier,
+		defaultChatID: defaultChatID,
 	}
 }
 
@@ -77,9 +79,13 @@ func (hs *HookServer) handleNotify(w http.ResponseWriter, r *http.Request) {
 	}
 	hs.mu.Unlock()
 
-	// 如果指定了 chat_id，主动推送到飞书
-	if notif.ChatID != "" && notif.Message != "" {
-		if _, err := hs.replier.SendToChat(notif.ChatID, notif.Message); err != nil {
+	// 如果指定了 chat_id，主动推送到飞书；否则用默认
+	chatID := notif.ChatID
+	if chatID == "" {
+		chatID = hs.defaultChatID
+	}
+	if chatID != "" && notif.Message != "" {
+		if _, err := hs.replier.SendToChat(chatID, notif.Message); err != nil {
 			log.Printf("推送飞书失败: %v", err)
 		}
 	}

@@ -43,5 +43,8 @@ shell_whitelist:
 # Hook 服务端口（供 Claude Code hooks 回调）
 hook_port: 9876
 
+# 默认通知目标（Claude Code hooks 不指定 chat_id 时发送到此聊天）
+notify_chat_id: ""
+
 # 日志级别: debug, info, warn, error
 log_level: "info"
