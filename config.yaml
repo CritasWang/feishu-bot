@@ -1,0 +1,47 @@
+# 飞书机器人配置
+# 也可以通过环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET 设置
+
+app_id: ""
+app_secret: ""
+
+# 安全控制（留空则允许所有人）
+allowed_users: []    # 允许的用户 open_id 列表
+allowed_chats: []    # 允许的群聊 chat_id 列表
+
+# Claude Code 配置
+claude_bin: "claude"                         # claude 可执行文件路径
+default_cwd: "/Volumes/data/sources"         # 默认工作目录
+claude_danger_mode: false                    # 是否跳过所有权限检查
+
+# claude -p 模式下允许的工具（非 danger 模式时生效）
+claude_allowed_tools:
+  - "Read"
+  - "Glob"
+  - "Grep"
+  - "Bash(git status)"
+  - "Bash(git log)"
+  - "Bash(git diff)"
+
+# 项目别名映射（使用 @别名 快捷访问）
+projects:
+  server: "/Volumes/data/sources/server_migration"
+  devops: "/Volumes/data/sources/devops"
+  # myproject: "/path/to/myproject"
+
+# Shell 白名单（/shell 命令只能执行这些前缀的命令）
+shell_whitelist:
+  - "docker ps"
+  - "docker stats"
+  - "git status"
+  - "git log"
+  - "systemctl status"
+  - "df -h"
+  - "free -h"
+  - "uptime"
+  - "nvidia-smi"
+
+# Hook 服务端口（供 Claude Code hooks 回调）
+hook_port: 9876
+
+# 日志级别: debug, info, warn, error
+log_level: "info"
