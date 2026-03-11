@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -167,6 +168,9 @@ func runBot(configPath, logDir string) {
 		<-sigCh
 		log.Println("正在关闭...")
 		cancel()
+		// 给 WebSocket 2 秒优雅退出，之后强制退出
+		time.Sleep(2 * time.Second)
+		os.Exit(0)
 	}()
 
 	// 启动

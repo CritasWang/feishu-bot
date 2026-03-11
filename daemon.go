@@ -102,12 +102,28 @@ func daemonStop() error {
 		return fmt.Errorf("查找进程失败: %w", err)
 	}
 
+	// 发送 SIGTERM
 	if err := process.Signal(syscall.SIGTERM); err != nil {
 		return fmt.Errorf("发送停止信号失败: %w", err)
 	}
 
+	// 等待进程退出，最多 5 秒
+	for i := 0; i < 50; i++ {
+		time.Sleep(100 * time.Millisecond)
+		if !isRunning(pid) {
+			os.Remove(pidFilePath())
+			fmt.Printf("飞书机器人已停止 (PID: %d)\n", pid)
+			return nil
+		}
+	}
+
+	// 超时，强制杀死
+	if err := process.Signal(syscall.SIGKILL); err != nil {
+		return fmt.Errorf("强制终止失败: %w", err)
+	}
+
 	os.Remove(pidFilePath())
-	fmt.Printf("飞书机器人已停止 (PID: %d)\n", pid)
+	fmt.Printf("飞书机器人已强制停止 (PID: %d)\n", pid)
 	return nil
 }
 
