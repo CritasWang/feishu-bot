@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ type AskConfig struct {
 	DefaultCWD     string
 	AllowedTools   []string
 	DangerMode     bool
+	TimeoutMinutes int // 超时时间（分钟），默认 50
 	ResolveCWD     func(string) string
 }
 
@@ -39,7 +41,7 @@ func (c *AskCommand) IsDangerMode() bool {
 }
 
 // UpdateConfig 热更新配置
-func (c *AskCommand) UpdateConfig(claudeBin, defaultCWD string, allowedTools []string, dangerMode bool) {
+func (c *AskCommand) UpdateConfig(claudeBin, defaultCWD string, allowedTools []string, dangerMode bool, timeoutMinutes int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if claudeBin != "" {
@@ -50,10 +52,46 @@ func (c *AskCommand) UpdateConfig(claudeBin, defaultCWD string, allowedTools []s
 	}
 	c.config.AllowedTools = allowedTools
 	c.config.DangerMode = dangerMode
+	if timeoutMinutes > 0 {
+		c.config.TimeoutMinutes = timeoutMinutes
+	}
 }
 
 func NewAskCommand(cfg AskConfig) *AskCommand {
+	// 设置默认超时
+	if cfg.TimeoutMinutes <= 0 {
+		cfg.TimeoutMinutes = 50
+	}
 	return &AskCommand{config: cfg}
+}
+
+// filterEnvForClaudeCode 过滤环境变量，移除可能导致嵌套会话检测的变量
+// 这可以防止 "Claude Code cannot be launched inside another Claude Code session" 错误
+func filterEnvForClaudeCode(parentEnv []string) []string {
+	filtered := make([]string, 0, len(parentEnv))
+
+	// 需要过滤的环境变量前缀/名称（防止嵌套会话检测）
+	blockedPrefixes := []string{
+		"CLAUDECODE",           // Claude Code 会话标识
+		"ANTHROPIC_",           // Anthropic 相关的会话变量
+		"CLAUDE_SESSION",       // Claude 会话相关
+		"AGENT_SDK_",          // Agent SDK 相关
+	}
+
+	for _, env := range parentEnv {
+		blocked := false
+		for _, prefix := range blockedPrefixes {
+			if strings.HasPrefix(env, prefix) {
+				blocked = true
+				break
+			}
+		}
+		if !blocked {
+			filtered = append(filtered, env)
+		}
+	}
+
+	return filtered
 }
 
 func (c *AskCommand) Name() string        { return "ask" }
@@ -89,12 +127,16 @@ func (c *AskCommand) Execute(ctx context.Context, args string, meta *MessageMeta
 	}
 
 	// 设置超时
-	timeout := 5 * time.Minute
+	timeout := time.Duration(c.config.TimeoutMinutes) * time.Minute
 	execCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(execCtx, c.config.ClaudeBin, cmdArgs...)
 	cmd.Dir = resolvedCWD
+
+	// 过滤环境变量，防止嵌套 Claude Code 会话错误
+	// 移除 CLAUDECODE 等可能触发嵌套会话检测的环境变量
+	cmd.Env = filterEnvForClaudeCode(os.Environ())
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -103,7 +145,7 @@ func (c *AskCommand) Execute(ctx context.Context, args string, meta *MessageMeta
 	err := cmd.Run()
 	if err != nil {
 		if execCtx.Err() == context.DeadlineExceeded {
-			return "⏰ Claude Code 执行超时（5分钟）", nil
+			return fmt.Sprintf("⏰ Claude Code 执行超时（%d分钟）", c.config.TimeoutMinutes), nil
 		}
 		errMsg := stderr.String()
 		if errMsg == "" {

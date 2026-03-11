@@ -33,6 +33,10 @@ type Config struct {
 	// 默认通知目标（hooks 不指定 chat_id 时使用）
 	NotifyChatID string `yaml:"notify_chat_id"`
 
+	// 超时配置（分钟）
+	ClaudeAskTimeout     int `yaml:"claude_ask_timeout"`     // /ask 命令超时（默认 50 分钟）
+	ClaudeSessionTimeout int `yaml:"claude_session_timeout"` // /session 会话响应超时（默认 50 分钟）
+
 	// 日志级别
 	LogLevel string `yaml:"log_level"` // debug, info, warn, error
 }
@@ -54,8 +58,10 @@ func DefaultConfig() *Config {
 			"free -h",
 			"uptime",
 		},
-		HookPort: 9876,
-		LogLevel: "info",
+		HookPort:             9876,
+		LogLevel:             "info",
+		ClaudeAskTimeout:     50, // 默认 50 分钟
+		ClaudeSessionTimeout: 50, // 默认 50 分钟
 	}
 }
 

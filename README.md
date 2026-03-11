@@ -82,6 +82,22 @@ go build -o feishu-bot .
 
 **非命令消息**: 如有活跃 tmux 会话则发送到会话，否则等同 `/ask`。
 
+## 配置说明
+
+### 超时配置
+
+默认情况下，Claude Code 执行超时为 50 分钟（相比之前的 5 分钟大幅提升）。你可以在 `config.yaml` 中自定义超时时间：
+
+```yaml
+# Claude Code 超时配置（分钟）
+claude_ask_timeout: 50        # /ask 命令超时时间
+claude_session_timeout: 50    # /session 会话响应超时
+```
+
+### 嵌套会话问题
+
+本项目已修复嵌套 Claude Code 会话问题。系统会自动过滤可能导致嵌套会话检测的环境变量（如 `CLAUDECODE`、`ANTHROPIC_*` 等），确保在 Claude Code 环境中也能正常启动子进程。
+
 ## Claude Code Hooks 集成
 
 ### 从 Claude Code 通知飞书

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -50,9 +51,14 @@ func (sm *SessionManager) Start(key, cwd string) error {
 	}
 
 	// 创建 tmux 会话
+	// 注意：通过 tmux 启动时，需要确保环境变量不会导致嵌套会话检测
 	cmd := exec.Command("tmux", "new-session", "-d", "-s", name,
 		"-c", resolvedCWD,
 		fmt.Sprintf("cd %s && %s", shellQuote(resolvedCWD), claudeCmd))
+
+	// 过滤环境变量，防止嵌套 Claude Code 会话错误
+	// 移除 CLAUDECODE 等可能触发嵌套会话检测的环境变量
+	cmd.Env = filterEnvForSession(os.Environ())
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("创建 tmux 会话失败: %w", err)
@@ -163,7 +169,17 @@ func (sm *SessionManager) waitForResponse(name string, beforeLines int) (string,
 
 	var lastContent string
 	stableCount := 0
-	maxWait := 300 // 最长等待 300 秒 (5 分钟)
+
+	// 使用配置的超时时间（默认 50 分钟）
+	timeoutMinutes := sm.config.ClaudeSessionTimeout
+	if timeoutMinutes <= 0 {
+		timeoutMinutes = 50
+	}
+	maxWait := timeoutMinutes * 60 // 转换为秒
+
+	// 进度报告阈值（每 5 分钟报告一次进度）
+	progressInterval := 300 // 5 分钟 = 300 秒
+	lastProgressReport := 0
 
 	for i := 0; i < maxWait*2; i++ { // 每 500ms 检查一次
 		content, err := sm.capturePane(name)
@@ -183,14 +199,22 @@ func (sm *SessionManager) waitForResponse(name string, beforeLines int) (string,
 			lastContent = content
 		}
 
+		// 进度报告：每 5 分钟提示一次任务仍在执行
+		elapsedSeconds := i / 2 // 因为每 500ms 检查一次
+		if elapsedSeconds > 0 && elapsedSeconds%progressInterval == 0 && elapsedSeconds != lastProgressReport {
+			lastProgressReport = elapsedSeconds
+			// 注意：这里只是记录日志，实际进度报告需要通过回调机制
+			// 可以考虑在未来版本中通过 hook 回调发送进度通知
+		}
+
 		time.Sleep(500 * time.Millisecond)
 	}
 
 	// 超时，返回已有输出
 	if lastContent != "" {
-		return extractNewOutput(lastContent, beforeLines) + "\n⚠️ [输出可能不完整，已超时]", nil
+		return extractNewOutput(lastContent, beforeLines) + fmt.Sprintf("\n⚠️ [输出可能不完整，已超时 %d 分钟]", timeoutMinutes), nil
 	}
-	return "", fmt.Errorf("等待响应超时")
+	return "", fmt.Errorf("等待响应超时（%d 分钟）", timeoutMinutes)
 }
 
 // extractNewOutput 从 pane 内容中提取新增输出
@@ -224,4 +248,33 @@ func sanitizeName(s string) string {
 // shellQuote 简单 shell 引号转义
 func shellQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
+}
+
+// filterEnvForSession 过滤环境变量，移除可能导致嵌套会话检测的变量
+// 这可以防止 tmux 会话中的 Claude Code 检测到嵌套会话
+func filterEnvForSession(parentEnv []string) []string {
+	filtered := make([]string, 0, len(parentEnv))
+
+	// 需要过滤的环境变量前缀/名称（防止嵌套会话检测）
+	blockedPrefixes := []string{
+		"CLAUDECODE",           // Claude Code 会话标识
+		"ANTHROPIC_",           // Anthropic 相关的会话变量
+		"CLAUDE_SESSION",       // Claude 会话相关
+		"AGENT_SDK_",          // Agent SDK 相关
+	}
+
+	for _, env := range parentEnv {
+		blocked := false
+		for _, prefix := range blockedPrefixes {
+			if strings.HasPrefix(env, prefix) {
+				blocked = true
+				break
+			}
+		}
+		if !blocked {
+			filtered = append(filtered, env)
+		}
+	}
+
+	return filtered
 }
