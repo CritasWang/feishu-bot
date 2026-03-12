@@ -254,6 +254,8 @@ router.Register(NewMyCommand())
 
 **选 OpenClaw**：需要跨平台统一 AI 助手、多模型切换、语音/多模态交互。
 
+> 详细对比请参考 [docs/comparison-openclaw.md](docs/comparison-openclaw.md)。
+
 ## 安全注意
 
 - `/shell` 仅执行白名单内的命令
