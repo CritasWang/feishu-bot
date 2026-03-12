@@ -10,7 +10,7 @@ import (
 	"github.com/larksuite/oapi-sdk-go/v3/event/dispatcher"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 
-	"feishu-bot/commands"
+	"chatcc/commands"
 )
 
 // textContent 飞书文本消息 content JSON 结构

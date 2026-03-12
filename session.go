@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"feishu-bot/commands"
+	"chatcc/commands"
 )
 
 // Session 表示一个 tmux 中运行的 Claude Code 会话

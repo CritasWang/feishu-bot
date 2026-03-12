@@ -14,7 +14,7 @@ import (
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkws "github.com/larksuite/oapi-sdk-go/v3/ws"
 
-	"feishu-bot/commands"
+	"chatcc/commands"
 )
 
 // sessionManagerAdapter 适配器，将 SessionManager 转换为 commands.SessionManagerIface（用于 status 命令）
@@ -115,7 +115,7 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println("用法: feishu-bot <命令> [选项]")
+	fmt.Println("用法: chatcc <命令> [选项]")
 	fmt.Println()
 	fmt.Println("命令:")
 	fmt.Println("  start     后台启动（日志写入 logs/ 目录）")
@@ -130,15 +130,15 @@ func printUsage() {
 	fmt.Println("  --config <path>   配置文件路径（默认: config.yaml）")
 	fmt.Println()
 	fmt.Println("示例:")
-	fmt.Println("  feishu-bot start --config config.local.yaml")
-	fmt.Println("  feishu-bot stop")
-	fmt.Println("  feishu-bot console --config config.local.yaml")
+	fmt.Println("  chatcc start --config config.local.yaml")
+	fmt.Println("  chatcc stop")
+	fmt.Println("  chatcc console --config config.local.yaml")
 }
 
 func runBot(configPath, logDir string) {
 	// 配置日志输出
 	if logDir != "" {
-		w, err := NewDailyRotateWriter(logDir, "feishu-bot")
+		w, err := NewDailyRotateWriter(logDir, "chatcc")
 		if err != nil {
 			log.Fatalf("初始化日志失败: %v", err)
 		}

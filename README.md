@@ -1,6 +1,6 @@
-# feishu-bot
+# ChatCC
 
-飞书机器人本地服务 — 通过飞书消息远程操控 Claude Code 和本地程序。
+**Chat**（聊天）+ **CC**（Claude Code + Command）— 通过飞书消息远程操控 Claude Code 和本地程序。
 
 ## 特性
 
@@ -40,28 +40,28 @@ export FEISHU_APP_SECRET="xxx"
 
 ```bash
 # 编译
-go build -o feishu-bot .
+go build -o chatcc .
 
 # 后台启动（日志写入 logs/ 目录，按天自动切换）
-./feishu-bot start --config config.local.yaml
+./chatcc start --config config.local.yaml
 
 # 查看状态
-./feishu-bot status
+./chatcc status
 
 # 停止
-./feishu-bot stop
+./chatcc stop
 
 # 重启
-./feishu-bot restart --config config.local.yaml
+./chatcc restart --config config.local.yaml
 
 # 前台运行（日志输出到终端，调试用）
-./feishu-bot console --config config.local.yaml
+./chatcc console --config config.local.yaml
 ```
 
 ### 日志
 
-- `start` 模式日志写入 `logs/feishu-bot.log`
-- 跨天自动归档为 `logs/feishu-bot-YYYY-MM-DD.log.gz`（gzip 压缩）
+- `start` 模式日志写入 `logs/chatcc.log`
+- 跨天自动归档为 `logs/chatcc-YYYY-MM-DD.log.gz`（gzip 压缩）
 - `console` 模式日志直接输出到终端
 
 ## 命令列表
@@ -239,11 +239,11 @@ router.Register(NewMyCommand())
 
 ## 为什么不直接使用 OpenClaw？
 
-[OpenClaw](https://github.com/openclaw/openclaw) 是一个运行在本地设备上的**个人 AI 助手**，它支持在多种消息平台上与用户交互（包括 WhatsApp、Telegram、Slack、Discord、Google Chat、Signal、iMessage、BlueBubbles、IRC、Microsoft Teams、Matrix、**Feishu**、LINE、Mattermost 等）。虽然 OpenClaw 也支持飞书作为消息渠道之一，但 feishu-bot 和 OpenClaw 是针对不同需求设计的项目。
+[OpenClaw](https://github.com/openclaw/openclaw) 是一个运行在本地设备上的**个人 AI 助手**，它支持在多种消息平台上与用户交互（包括 WhatsApp、Telegram、Slack、Discord、Google Chat、Signal、iMessage、BlueBubbles、IRC、Microsoft Teams、Matrix、**Feishu**、LINE、Mattermost 等）。虽然 OpenClaw 也支持飞书作为消息渠道之一，但 ChatCC 和 OpenClaw 是针对不同需求设计的项目。
 
-### OpenClaw vs feishu-bot 核心区别
+### OpenClaw vs ChatCC 核心区别
 
-| 维度 | OpenClaw | feishu-bot |
+| 维度 | OpenClaw | ChatCC |
 |------|----------|------------|
 | **定位** | 通用个人 AI 助手，支持多平台 | 专注于飞书的 Claude Code 远程控制网关 |
 | **核心功能** | 多模型 AI 对话助手（ChatGPT/Claude/等） | Claude Code 专用执行环境（本地开发工具） |
@@ -256,7 +256,7 @@ router.Register(NewMyCommand())
 | **配置复杂度** | 需要配置多个消息平台 + AI 模型认证 | 仅需飞书应用配置 |
 | **目标用户** | 需要跨平台 AI 助手的个人用户 | 需要远程控制开发环境的开发者 |
 
-### 何时选择 feishu-bot？
+### 何时选择 ChatCC？
 
 **适合以下场景**：
 
@@ -318,16 +318,16 @@ router.Register(NewMyCommand())
 **可以！** 两个项目服务于不同的需求，可以同时使用：
 
 - **OpenClaw** 作为你的日常 AI 助手，处理通用对话、跨平台消息
-- **feishu-bot** 作为你的开发工具网关，专门处理 Claude Code 相关的开发任务
+- **ChatCC** 作为你的开发工具网关，专门处理 Claude Code 相关的开发任务
 
 实际使用中，你可以：
 - 在 WhatsApp/Telegram 上使用 OpenClaw 进行日常 AI 对话
-- 在飞书上使用 feishu-bot 远程控制开发环境、执行 Claude Code 任务
+- 在飞书上使用 ChatCC 远程控制开发环境、执行 Claude Code 任务
 - 两者各司其职，互不干扰
 
 ### 技术优势对比
 
-**feishu-bot 的独特优势**：
+**ChatCC 的独特优势**：
 
 1. **Claude Code 专用优化**
    - 针对 Claude Code 的特殊需求（环境变量过滤、嵌套会话）
