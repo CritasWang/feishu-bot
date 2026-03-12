@@ -239,7 +239,7 @@ router.Register(NewMyCommand())
 
 ## 为什么不直接使用 OpenClaw？
 
-[OpenClaw](https://github.com/anthropics/openclaw) 是 Anthropic 官方提供的用于在受限环境或多租户场景下运行 Claude Code 的基础设施。虽然 OpenClaw 和本项目都涉及远程访问 Claude Code，但它们针对不同的使用场景和架构需求。
+[OpenClaw](https://github.com/openclaw/openclaw) 是 Anthropic 官方提供的用于在受限环境或多租户场景下运行 Claude Code 的基础设施。虽然 OpenClaw 和本项目都涉及远程访问 Claude Code，但它们针对不同的使用场景和架构需求。
 
 ### OpenClaw vs feishu-bot 主要区别
 
