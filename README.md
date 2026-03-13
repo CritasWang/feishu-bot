@@ -11,6 +11,7 @@
 - **通用命令框架**: 可扩展的命令路由，新增命令只需实现接口
 - **Claude Code Hooks 回调**: 内置 HTTP 端点，支持双向通信
 - **安全控制**: 用户/群聊白名单、Shell 命令白名单
+- **定时状态推送**: 自动推送系统状态卡片到飞书群聊（默认每 3 小时）
 
 ## 快速开始
 
@@ -77,6 +78,7 @@ go build -o chatcc .
 | `/session kill <会话名>` | 终止指定会话 | `/session kill cc-chat-xxx` |
 | `/session stop` | 关闭当前会话 | `/session stop` |
 | `/s <消息>` | 发送到活跃会话 | `/s 帮我重构这个函数` |
+| `/key <按键>` | 向活跃会话发送特殊按键 | `/key enter`, `/key ctrl+c` |
 | `/shell <命令>` | 执行白名单 shell 命令 | `/shell docker ps` |
 | `/project` 或 `/p` | 查看已配置的项目别名 | `/project` |
 | `/status` | 查看系统状态和活跃会话 | `/status` |
@@ -108,6 +110,18 @@ claude_session_timeout: 50    # /session 会话响应超时
 # 消息分块配置
 max_chunk_size: 3500    # 长消息分块大小（默认 3500 字符）
 ```
+
+### 定时状态推送
+
+系统可以定时将服务状态以卡片形式推送到飞书群聊，方便团队实时了解系统运行情况。默认每 3 小时推送一次，推送内容与 `/status` 命令一致（系统信息、活跃会话、tmux 状态等）。
+
+```yaml
+# 定时状态推送
+status_push_interval: 180        # 推送间隔（分钟），0 则禁用，默认 180（3 小时）
+status_push_chat_id: ""          # 推送目标群聊，为空则用 notify_chat_id
+```
+
+支持热重载：修改配置后执行 `/reload` 即可生效，无需重启。
 
 ### 交互式输入处理
 
