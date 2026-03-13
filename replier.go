@@ -136,6 +136,62 @@ func (r *Replier) ReplyChunked(messageID, text string, maxChunkSize int) error {
 	return nil
 }
 
+// ReplyCard 以卡片形式回复消息
+func (r *Replier) ReplyCard(messageID, text string) (string, error) {
+	cardJSON := TextToCard(text)
+
+	resp, err := r.client.Im.Message.Reply(context.Background(),
+		larkim.NewReplyMessageReqBuilder().
+			MessageId(messageID).
+			Body(larkim.NewReplyMessageReqBodyBuilder().
+				MsgType(larkim.MsgTypeInteractive).
+				Content(cardJSON).
+				Build()).
+			Build())
+
+	if err != nil {
+		log.Printf("回复卡片消息失败: %v", err)
+		return "", err
+	}
+
+	if !resp.Success() {
+		log.Printf("回复卡片消息失败: code=%d msg=%s", resp.Code, resp.Msg)
+		return "", fmt.Errorf("feishu API error: %d %s", resp.Code, resp.Msg)
+	}
+
+	msgID := ""
+	if resp.Data != nil && resp.Data.MessageId != nil {
+		msgID = *resp.Data.MessageId
+	}
+	return msgID, nil
+}
+
+// ReplyCardChunked 将长消息分块以卡片形式回复
+func (r *Replier) ReplyCardChunked(messageID, text string, maxBodyRunes int) error {
+	cards := TextToCardChunks(text, maxBodyRunes)
+	for i, cardJSON := range cards {
+		resp, err := r.client.Im.Message.Reply(context.Background(),
+			larkim.NewReplyMessageReqBuilder().
+				MessageId(messageID).
+				Body(larkim.NewReplyMessageReqBodyBuilder().
+					MsgType(larkim.MsgTypeInteractive).
+					Content(cardJSON).
+					Build()).
+				Build())
+
+		if err != nil {
+			log.Printf("发送第 %d/%d 张卡片失败: %v", i+1, len(cards), err)
+			return err
+		}
+
+		if !resp.Success() {
+			log.Printf("发送第 %d/%d 张卡片失败: code=%d msg=%s", i+1, len(cards), resp.Code, resp.Msg)
+			return fmt.Errorf("feishu API error: %d %s", resp.Code, resp.Msg)
+		}
+	}
+	return nil
+}
+
 // splitIntoChunks 智能分块：优先在段落、句子边界分块，UTF-8 安全
 func splitIntoChunks(text string, maxSize int) []string {
 	if utf8.RuneCountInString(text) <= maxSize {

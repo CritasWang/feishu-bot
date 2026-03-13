@@ -99,21 +99,18 @@ func NewEventHandler(cfg *Config, router *Router, replier *Replier) *dispatcher.
 			}
 
 			if result != "" {
-				// 如果之前发了"处理中"，更新那条消息
 				if processingMsgID != "" {
-					// 对于长消息，先更新为提示，然后分块回复
-					if len(result) > cfg.MaxChunkSize {
-						replier.Update(processingMsgID, "✅ 处理完成，正在发送结果...")
+					replier.Update(processingMsgID, "✅ 处理完成")
+				}
+				// 以卡片形式回复，失败则降级为纯文本
+				if len(result) > cfg.MaxChunkSize {
+					if err := replier.ReplyCardChunked(meta.MessageID, result, cfg.MaxChunkSize); err != nil {
+						log.Printf("卡片分块回复失败，降级纯文本: %v", err)
 						replier.ReplyChunked(meta.MessageID, result, cfg.MaxChunkSize)
-					} else if updateErr := replier.Update(processingMsgID, result); updateErr != nil {
-						// 更新失败则发新消息
-						replier.Reply(meta.MessageID, result)
 					}
 				} else {
-					// 使用分块回复处理长消息
-					if len(result) > cfg.MaxChunkSize {
-						replier.ReplyChunked(meta.MessageID, result, cfg.MaxChunkSize)
-					} else {
+					if _, err := replier.ReplyCard(meta.MessageID, result); err != nil {
+						log.Printf("卡片回复失败，降级纯文本: %v", err)
 						replier.Reply(meta.MessageID, result)
 					}
 				}

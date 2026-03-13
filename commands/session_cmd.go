@@ -19,10 +19,16 @@ type SessionInfo struct {
 type SessionIface interface {
 	Start(key, cwd string) error
 	Send(key, message string) (string, error)
+	SendKeys(key string, tmuxKeys ...string) error
 	Stop(key string) error
 	GetSession(key string) (SessionInfo, bool)
 	ListAllSessions() []SessionInfo
 	KillByName(name string) error
+}
+
+// DangerModeIface 危险模式查询接口
+type DangerModeIface interface {
+	IsDangerMode() bool
 }
 
 type SessionCommand struct {

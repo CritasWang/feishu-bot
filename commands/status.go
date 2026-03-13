@@ -22,12 +22,14 @@ type SessionManagerIface interface {
 type StatusCommand struct {
 	config         ConfigIface
 	sessionManager SessionManagerIface
+	dangerMode     DangerModeIface
 }
 
-func NewStatusCommand(cfg ConfigIface, sm SessionManagerIface) *StatusCommand {
+func NewStatusCommand(cfg ConfigIface, sm SessionManagerIface, dm DangerModeIface) *StatusCommand {
 	return &StatusCommand{
 		config:         cfg,
 		sessionManager: sm,
+		dangerMode:     dm,
 	}
 }
 
@@ -90,6 +92,14 @@ func (c *StatusCommand) Execute(ctx context.Context, args string, meta *MessageM
 		sb.WriteString(fmt.Sprintf("  版本: %s\n", strings.TrimSpace(string(out))))
 	} else {
 		sb.WriteString("  未安装或不在 PATH 中\n")
+	}
+
+	// Danger 模式状态
+	sb.WriteString("\n⚡ 权限模式:\n")
+	if c.dangerMode != nil && c.dangerMode.IsDangerMode() {
+		sb.WriteString("  ⚠️ Danger 模式: 开启（跳过所有权限检查）\n")
+	} else {
+		sb.WriteString("  🔒 Danger 模式: 关闭（使用工具白名单）\n")
 	}
 
 	sb.WriteString(fmt.Sprintf("\n⏱️ 查询时间: %s", time.Now().Format("2006-01-02 15:04:05")))

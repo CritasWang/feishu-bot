@@ -22,15 +22,17 @@ type Session struct {
 
 // SessionManager 管理多个 tmux Claude Code 会话
 type SessionManager struct {
-	mu       sync.RWMutex
-	sessions map[string]*Session // key: chatID 或 userID
-	config   *Config
+	mu             sync.RWMutex
+	sessions       map[string]*Session // key: chatID 或 userID
+	config         *Config
+	dangerModeFunc func() bool // 运行时获取 danger 模式状态
 }
 
-func NewSessionManager(cfg *Config) *SessionManager {
+func NewSessionManager(cfg *Config, dangerModeFunc func() bool) *SessionManager {
 	return &SessionManager{
-		sessions: make(map[string]*Session),
-		config:   cfg,
+		sessions:       make(map[string]*Session),
+		config:         cfg,
+		dangerModeFunc: dangerModeFunc,
 	}
 }
 
@@ -47,8 +49,13 @@ func (sm *SessionManager) Start(key, cwd string) error {
 	resolvedCWD := sm.config.ResolveCWD(cwd)
 
 	// 构建 claude 命令
+	// 优先使用运行时 danger 模式状态（/danger on|off 切换），回退到配置文件值
 	claudeCmd := sm.config.ClaudeBin
-	if sm.config.ClaudeDangerMode {
+	isDanger := sm.config.ClaudeDangerMode
+	if sm.dangerModeFunc != nil {
+		isDanger = sm.dangerModeFunc()
+	}
+	if isDanger {
 		claudeCmd += " --dangerously-skip-permissions"
 	}
 
@@ -189,6 +196,24 @@ func (sm *SessionManager) GetSessionByKey(key string) (commands.SessionInfo, boo
 		CreatedAt: s.CreatedAt,
 		Active:    s.Active,
 	}, true
+}
+
+// SendKeys 向 tmux 会话发送原始按键（不自动追加 Enter）
+func (sm *SessionManager) SendKeys(key string, tmuxKeys ...string) error {
+	sm.mu.RLock()
+	s, ok := sm.sessions[key]
+	sm.mu.RUnlock()
+
+	if !ok || !s.Active {
+		return fmt.Errorf("没有活跃的会话，请先 /session start [目录]")
+	}
+
+	args := append([]string{"send-keys", "-t", s.Name}, tmuxKeys...)
+	cmd := exec.Command("tmux", args...)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("发送按键失败: %w", err)
+	}
+	return nil
 }
 
 // KillByName 通过会话名称终止会话

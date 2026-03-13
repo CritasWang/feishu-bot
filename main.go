@@ -65,6 +65,10 @@ func (a *sessionCommandAdapter) KillByName(name string) error {
 	return a.sm.KillByName(name)
 }
 
+func (a *sessionCommandAdapter) SendKeys(key string, tmuxKeys ...string) error {
+	return a.sm.SendKeys(key, tmuxKeys...)
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		printUsage()
@@ -170,15 +174,7 @@ func runBot(configPath, logDir string) {
 
 	// 创建各模块
 	replier := NewReplier(larkClient)
-	sessionMgr := NewSessionManager(cfg)
-	router := NewRouter()
-	hookServer := NewHookServer(cfg.HookPort, replier, cfg.NotifyChatID)
-
-	// 创建会话管理器适配器
-	sessionAdapter := &sessionManagerAdapter{sm: sessionMgr}
-
-	// 注册命令
-	helpCmd := commands.NewHelpCommand()
+	// askCmd 需要先创建，以便 SessionManager 可以查询运行时 danger 模式
 	askCmd := commands.NewAskCommand(commands.AskConfig{
 		ClaudeBin:      cfg.ClaudeBin,
 		DefaultCWD:     cfg.DefaultCWD,
@@ -187,6 +183,15 @@ func runBot(configPath, logDir string) {
 		TimeoutMinutes: cfg.ClaudeAskTimeout,
 		ResolveCWD:     cfg.ResolveCWD,
 	})
+	sessionMgr := NewSessionManager(cfg, askCmd.IsDangerMode)
+	router := NewRouter()
+	hookServer := NewHookServer(cfg.HookPort, replier, cfg.NotifyChatID)
+
+	// 创建会话管理器适配器
+	sessionAdapter := &sessionManagerAdapter{sm: sessionMgr}
+
+	// 注册命令
+	helpCmd := commands.NewHelpCommand()
 	shellCmd := commands.NewShellCommand(cfg.ShellWhitelist)
 
 	// 创建会话命令适配器
@@ -195,8 +200,9 @@ func runBot(configPath, logDir string) {
 	router.Register(askCmd)
 	router.Register(commands.NewSessionCommand(sessionCmdAdapter))
 	router.Register(commands.NewSendCommand(sessionCmdAdapter))
+	router.Register(commands.NewKeyCommand(sessionCmdAdapter))
 	router.Register(shellCmd)
-	router.Register(commands.NewStatusCommand(cfg, sessionAdapter))
+	router.Register(commands.NewStatusCommand(cfg, sessionAdapter, askCmd))
 	router.Register(commands.NewProjectCommand(cfg))
 	router.Register(commands.NewDangerCommand(askCmd))
 
